@@ -32,6 +32,9 @@ export class Message extends Model{
     get preview() {return this._data.preview;}
     set preview(value) {return this._data.preview = value;}
 
+    get status() {return this._data.status;}
+    set status(value) {return this._data.status = value;}
+
     get info() {return this._data.info;}
     set info(value) {return this._data.info = value;}
     
@@ -209,7 +212,7 @@ export class Message extends Model{
                                                     </a>
                                                     <div class="_3cMIj">
                                                         <span class="PyPig message-file-info">${this.info}</span>
-                                                        <span class="PyPig message-file-type">${this.filetype}</span>
+                                                        <span class="PyPig message-file-type">${this.fileType}</span>
                                                         <span class="PyPig message-file-size">${this.size}</span>
                                                     </div>
                                                     <div class="_3Lj_s">
@@ -466,7 +469,7 @@ export class Message extends Model{
     }
 
 
-    sendDocument(chatId, from, file,filePreview, info    ){
+    static sendDocument(chatId, from, file,filePreview, info    ){
 
         Message.send(chatId,from,'document','').then(msgRef =>{
 

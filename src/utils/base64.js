@@ -6,7 +6,7 @@ export class Base64{
         let regex = /^data:(.+);base64,(.*)$/;
 
             let result = urlBase64.match(regex);
-
+            console.log(regex);
             return result[1];
 
     }

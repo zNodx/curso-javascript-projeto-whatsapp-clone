@@ -14,6 +14,7 @@ export class WhatsAppController{
 
 
     constructor(){
+        this._active= true;
         this._firebase = new Firebase();
         this.initAuth();
         this.elementsPrototype();
@@ -55,12 +56,16 @@ export class WhatsAppController{
 
     notification(data){
 
-        if(Notification.permission === 'granted'){
+        if(Notification.permission === 'granted' && !this._active){
 
             let n = new Notification(this._contactActive.name,{
                 icon: this._contactActive.photo,
                 body: data.content
             });
+
+            let sound = new Audio('./audio/alert.mp3');
+            sound.currentTime = 0;
+            sound.play();
 
             setTimeout(()=>{
 
@@ -239,8 +244,9 @@ export class WhatsAppController{
                         display:'flex'
                     });
                     this.el.panelMessagesContainer.innerHTML='';
-
-
+                    
+                    
+                    this._messagesReceived = [];
 
                     Message.getRef(this._contactActive.chatId).orderBy('timeStamp').onSnapshot(docs =>{
 
@@ -250,7 +256,6 @@ export class WhatsAppController{
 
                         let autoScroll = (scrollTop >= scrollTopMax);
                         
-
                         
                         docs.forEach(doc=>{
 
@@ -263,7 +268,15 @@ export class WhatsAppController{
                             
                             let me = (data.from === this._user.email);
 
+                            if (!me && this._messagesReceived.filter(id =>{ return (id === data.id) }).length === 0){
+
+                                this.notification(data);
+                                this._messagesReceived.push(data.id)
+
+                            }
+                            
                             let view = message.getViewElement(me);
+                            
                             if(!this.el.panelMessagesContainer.querySelector('#_'+ data.id)){
                                 
                             
@@ -277,14 +290,12 @@ export class WhatsAppController{
 
                                     merge:true
 
-                                });
+                                });        
 
-                               
-
-
+                                
                             }
-                            
                             this.el.panelMessagesContainer.appendChild(view) 
+                            
                             }else{
 
                                 
@@ -307,7 +318,6 @@ export class WhatsAppController{
                             } 
                             
                             if(message.type === 'contact'){
-
 
                                 view.querySelector('.btn-message-send').on('click', e =>{
 
@@ -451,6 +461,19 @@ export class WhatsAppController{
     }
 
     initEvents(){
+
+        window.addEventListener('focus', e=>{
+
+            this._active = true;
+
+        });
+
+        window.addEventListener('blur', e=>{
+
+            this._active = false;
+
+        });
+     
 
         this.el.inputSearchContacts.on('keyup', e=>{
 
@@ -702,19 +725,19 @@ export class WhatsAppController{
 
             this.el.btnSendPicture.disabled = true;
 
+            
             let regex = /^data:(.+);base64,(.*)$/;
-
             let result = this.el.pictureCamera.src.match(regex);
-
             let mimeType = result[1];
-
             let ext = mimeType.split('/')[1];
 
             let filename = `camera${Date.now()}.${ext}`;
 
             let picture = new Image();
-
             picture.src = this.el.pictureCamera.src;
+
+
+
             picture.onload = e=>{
 
 
@@ -790,10 +813,19 @@ export class WhatsAppController{
                         case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
                             this.el.iconPanelDocumentPreview.className = 'jcxhw icon-doc-xls'
                             break;
-                        case 'application/vnd.ms-excel':
+
+                        case 'application/mspowerpoint':
                         case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
-                            this.el.iconPanelDocumentPreview.className = 'jcxhw icon-doc-ppt'
+                            this.el.iconPanelDocumentPreview.className = 'jcxhw icon-doc-ppt';
+    
                             break;
+
+                        case 'application/msword':
+                        case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+                            this.el.iconPanelDocumentPreview.className = 'jcxhw icon-doc-doc';
+    
+                            break;
+
                                           
                         default:
                             this.el.iconPanelDocumentPreview.className = 'jcxhw icon-doc-generic'
@@ -819,19 +851,27 @@ export class WhatsAppController{
 
         this.el.btnSendDocument.on('click', e=>{
 
-            let message = new Message();
-
             let file = this.el.inputDocument.files[0]
             let base64 = this.el.imgPanelDocumentPreview.src;
 
             if(file.type === 'application/pdf'){
                 Base64.toFile(base64).then(filePreview =>{
 
-                message.sendDocument(this._contactActive.chatId,this._user.email,file,filePreview,this.el.infoPanelDocumentPreview.innerHTML);
+                Message.sendDocument(
+                    this._contactActive.chatId,
+                    this._user.email,
+                    file,
+                    filePreview,
+                    this.el.infoPanelDocumentPreview.innerHTML                    
+                    );
                 })
             }else{
 
-                message.sendDocument(this._contactActive.chatId,this._user.email,file);
+                Message.sendDocument(
+                    this._contactActive.chatId,
+                    this._user.email,
+                    file
+                    );
 
             }
 
@@ -980,7 +1020,7 @@ export class WhatsAppController{
 
             emoji.on('click', e=>{
 
-                console.log(emoji.dataset.unicode);
+               
                 let img = this.el.imgEmojiDefault.cloneNode();
 
                 img.style.cssText= emoji.style.cssText;
@@ -995,7 +1035,7 @@ export class WhatsAppController{
             
                 let cursor = window.getSelection();
 
-                if (!cursor.focusNode || !cursor.focusNode.id == 'input-text'){
+                if (!cursor.focusNode.id || !cursor.focusNode.id == 'input-text'){
 
                     this.el.inputText.focus();
                     cursor = window.getSelection();

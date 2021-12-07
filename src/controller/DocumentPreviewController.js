@@ -17,7 +17,7 @@ export class DocumentPreviewController {
 
             let   reader = new FileReader();            
 
-            switch (this._file.type || this._file.mimetype){
+            switch (this._file.type){
 
                 case 'image/png':
                 case 'image/jpeg':
