@@ -958,11 +958,11 @@ export class WhatsAppController{
                     this._user.photo
 
                 )
-
+                
+                this.closeRecordMicrophone();
             })
-
             this._microphoneController.stopRecorder();
-            this.closeRecordMicrophone();
+            
             
         });
 
